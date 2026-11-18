@@ -1,0 +1,22 @@
+[
+  {
+    "id": "rapido",
+    "nombre": "R\u00e1pido",
+    "color": "#FF4D6D",
+    "descripcion": "Partidas cortas e intensas. Las esferas aparecen casi sin pausa y desaparecen enseguida.",
+    "duracionSeg": 30,
+    "apareceCadaMs": 700,
+    "vidaMs": 900,
+    "puntos": 10
+  },
+  {
+    "id": "clasico",
+    "nombre": "Cl\u00e1sico",
+    "color": "#2EE6F0",
+    "descripcion": "Ritmo m\u00e1s tranquilo para practicar tu punter\u00eda. Las esferas duran m\u00e1s, pero dan menos puntos.",
+    "duracionSeg": 60,
+    "apareceCadaMs": 1200,
+    "vidaMs": 1500,
+    "puntos": 5
+  }
+]

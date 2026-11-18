@@ -1,0 +1,114 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+
+body {
+  min-height: 100vh;
+  color: #e8ecf4;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(43, 47, 107, 0.7) 0%, transparent 60%),
+    linear-gradient(#14161b, #1c1f27);
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 48px 16px;
+}
+
+button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+
+/* ---------- Menu ---------- */
+.menu { width: min(100%, 760px); display: flex; flex-direction: column; gap: 28px; }
+.menu-titulo { text-align: center; }
+.menu-titulo h1 {
+  margin: 0; padding-right: 0.1em;
+  font-size: 68px; font-style: italic; font-weight: 800;
+  background: linear-gradient(90deg, #2EE6F0, #8B8CFF, #FF4D6D);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.menu-titulo p { margin: 6px 0 0; color: #b9c0cc; }
+
+.modos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 640px) { .modos-grid { grid-template-columns: 1fr; } }
+
+.modo {
+  --c: #2EE6F0;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 20px; border-radius: 16px; text-align: left;
+  background: #1e2130; border: 2px solid #343a4d; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.modo:hover { border-color: var(--c); }
+.modo.activo {
+  border-color: var(--c);
+  box-shadow: 0 0 0 1px var(--c), 0 12px 32px -12px var(--c);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c) 20%, #1e2130), #1e2130 65%);
+}
+.modo-nombre { font-size: 28px; font-weight: 800; font-style: italic; color: var(--c); }
+.modo.activo .modo-nombre::after { content: ' \2713'; }
+.modo-desc { color: #b9c0cc; font-size: 14px; line-height: 1.45; min-height: 62px; }
+.modo-datos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.modo-datos li {
+  display: flex; justify-content: space-between;
+  padding: 8px 12px; border-radius: 8px; background: #14161b; font-size: 14px;
+}
+.modo-datos strong { color: var(--c); }
+
+.menu-acciones { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.menu-acciones button { width: min(100%, 380px); }
+
+/* ---------- Otras pantallas ---------- */
+.pantalla { width: min(100%, 420px); display: flex; flex-direction: column; gap: 14px; text-align: center; }
+.pantalla h2 { margin: 0; font-size: 30px; font-style: italic; }
+.pantalla input {
+  padding: 12px; border-radius: 10px; font-size: 16px;
+  background: #1e2130; color: #fff; border: 2px solid #2EE6F0;
+}
+
+.pantalla button, .menu-acciones button {
+  padding: 14px 20px; font-size: 16px; color: #fff; background: #2B2F6B;
+  clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+}
+.pantalla button.principal, .menu-acciones button.principal {
+  background: #2EE6F0; color: #10202B; font-weight: 800; font-size: 20px;
+}
+.pantalla button:hover, .menu-acciones button:hover { filter: brightness(1.15); }
+
+.puntos-final { margin: 0; font-size: 88px; font-weight: 800; font-style: italic; color: #2EE6F0; line-height: 1; }
+.aviso { padding: 10px; border-radius: 12px; background: #2B2F6B; border: 2px solid #2EE6F0; font-weight: 700; }
+
+.tabla { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.tabla li {
+  display: grid; grid-template-columns: 50px 1fr 70px; text-align: left;
+  padding: 9px 14px; border-radius: 8px; background: #1e2130;
+}
+.tabla li:first-child { background: #2EE6F0; color: #10202B; font-weight: 700; }
+
+/* ---------- Partida ---------- */
+div.partida { width: min(100%, 640px); margin: 0 auto; }
+div.partida .hud {
+  display: flex; justify-content: space-between;
+  padding: 10px 16px; margin-bottom: 10px; border: 0; border-radius: 12px;
+  background: #2B2F6B; color: #fff;
+}
+div.partida .hud strong { color: #2EE6F0; font-size: 20px; margin-left: 6px; }
+div.partida canvas { display: block; border-radius: 12px; border: 2px solid #2B2F6B; cursor: none !important; }
+
+
+/* ---------- Online ---------- */
+.codigo-sala { font-size: 64px; font-weight: 800; font-style: italic; letter-spacing: 0.15em; padding-left: 0.15em; color: #2EE6F0; margin: 0; }
+.jugadores { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.jugadores li { display: flex; justify-content: space-between; padding: 10px 14px; border-radius: 8px; background: #1e2130; }
+.jugadores .insignia { color: #FF4D6D; font-size: 13px; font-weight: 700; }
+.chips { display: flex; gap: 8px; justify-content: center; }
+.pantalla button.activo { background: #2EE6F0; color: #10202B; font-weight: 700; }
+.pantalla button:disabled { opacity: 0.5; cursor: wait; }
+.error { color: #FF4D6D; margin: 0; }
+.o { color: #b9c0cc; margin: 0; }
+.rivales { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px; font-size: 14px; }
+.rivales span { padding: 4px 12px; border-radius: 999px; background: #1e2130; }
+.rivales .yo { background: #2B2F6B; }
+.rivales strong { color: #2EE6F0; margin-left: 4px; }

@@ -1,0 +1,8 @@
+export const TARGET_HIT = 'target-hit'
+export const TARGET_MISSED = 'target-missed'
+export const TIME_UP = 'time-up'
+export const TIME_CHANGED = 'time-changed'
+export const PLAYERS_CHANGED = 'players-changed'
+export const MATCH_STARTED = 'match-started'
+export const SCORE_UPDATE = 'score-update'
+export const MATCH_ENDED = 'match-ended'
