@@ -112,3 +112,19 @@ div.partida canvas { display: block; border-radius: 12px; border: 2px solid #2B2
 .rivales span { padding: 4px 12px; border-radius: 999px; background: #1e2130; }
 .rivales .yo { background: #2B2F6B; }
 .rivales strong { color: #2EE6F0; margin-left: 4px; }
+
+/* ---------- HUD estilo Aim Lab ---------- */
+div.partida { position: relative; }
+.lienzo { position: relative; line-height: 0; }
+.hud-aim { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; align-items: flex-start; pointer-events: none; line-height: 1; }
+.hud-aim .panel { display: flex; align-items: baseline; gap: 8px; width: 170px; padding: 9px 22px; background: rgba(43, 47, 107, 0.92); color: #fff; }
+.hud-aim .panel-izq { clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%); }
+.hud-aim .panel-der { clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%); justify-content: flex-end; }
+.hud-aim small { font-size: 10px; color: #b8bdf0; letter-spacing: 0.08em; }
+.hud-aim .pct { color: #2EE6F0; font-size: 12px; font-weight: 700; }
+.hud-aim strong { font-size: 22px; font-weight: 800; color: #fff; }
+.reloj { display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 130px; padding: 5px 12px; color: #fff; }
+.reloj strong { font-size: 26px; }
+.reloj .flecha { font-size: 30px; opacity: 0.9; }
+.sonido { position: absolute; right: 10px; bottom: 10px; padding: 6px 10px; font-size: 12px; line-height: 1; border-radius: 8px; background: rgba(20, 22, 27, 0.75); color: #b9c0cc; }
+.sonido.apagado { opacity: 0.55; text-decoration: line-through; }

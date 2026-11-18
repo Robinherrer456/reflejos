@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+﻿import Phaser from 'phaser'
 
 // Borra el fondo claro conectado a los bordes de la imagen (flood fill desde el borde)
 function quitarFondo(escena, claveOrigen, claveNueva, tolerancia = 225) {
@@ -43,52 +43,76 @@ function quitarFondo(escena, claveOrigen, claveNueva, tolerancia = 225) {
   escena.textures.addCanvas(claveNueva, canvas)
 }
 
-// Pistola en primera persona usando una imagen PNG (src/assets/pistola.png)
+// Arma en primera persona: inercia, respiracion y retroceso (como un viewmodel de CS)
 export default class Pistola {
   constructor(escena) {
     const { width, height } = escena.scale
     this.escena = escena
-    this.base = { x: width * 0.64, y: height + 8 }
+    this.base = { x: width * 0.66, y: height + 8 }
+    this.centro = { x: width / 2, y: height / 2 }
 
     quitarFondo(escena, 'pistola', 'pistolaLimpia')
 
-    const imagen = escena.add.image(0, 0, 'pistolaLimpia').setOrigin(0.5, 1)
-    const escala = (height * 0.56) / imagen.height
-    imagen.setScale(escala)
+    this.imagen = escena.add.image(0, 0, 'pistolaLimpia').setOrigin(0.5, 1)
+    const escala = (height * 0.56) / this.imagen.height
+    this.imagen.setScale(escala)
 
-    // Zona de la mira de la pistola dentro de la imagen (ajustable)
-    const puntaX = (255 - imagen.width / 2) * escala
-    const puntaY = -(imagen.height - 70) * escala
+    // Zona de la punta del canon dentro de la imagen (ajustable)
+    const puntaX = (255 - this.imagen.width / 2) * escala
+    const puntaY = -(this.imagen.height - 70) * escala
 
-    this.destelloGrande = escena.add.circle(puntaX, puntaY, 22, 0xff9f43, 0.35).setVisible(false)
-    this.destello = escena.add.circle(puntaX, puntaY, 12, 0xffe08a, 0.95).setVisible(false)
+    this.destello = escena.add
+      .image(puntaX, puntaY, 'destello')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
 
-    this.cont = escena.add.container(this.base.x, this.base.y, [imagen, this.destelloGrande, this.destello])
+    this.cont = escena.add.container(this.base.x, this.base.y, [this.imagen, this.destello])
     this.cont.setDepth(10)
+
+    this.sway = { x: 0, y: 0 }
+    this.ultimo = { x: this.centro.x, y: this.centro.y }
+    this.retroceso = 0
   }
 
-  apuntar(puntero) {
-    const dx = puntero.x - this.base.x
-    const dy = puntero.y - this.base.y
-    const giro = Phaser.Math.Clamp(Math.atan2(dx, -dy) * 0.25, -0.1, 0.1)
-    this.cont.rotation += (giro - this.cont.rotation) * 0.25
+  actualizar(p, tiempo, delta) {
+    const nx = Phaser.Math.Clamp((p.x - this.centro.x) / this.centro.x, -1, 1)
+    const ny = Phaser.Math.Clamp((p.y - this.centro.y) / this.centro.y, -1, 1)
+
+    // inercia: el arma se retrasa respecto al movimiento del mouse
+    const vx = p.x - this.ultimo.x
+    const vy = p.y - this.ultimo.y
+    this.ultimo.x = p.x
+    this.ultimo.y = p.y
+    this.sway.x = Phaser.Math.Clamp(this.sway.x - vx * 0.6, -40, 40)
+    this.sway.y = Phaser.Math.Clamp(this.sway.y - vy * 0.4, -25, 25)
+    const k = 1 - Math.pow(0.0005, delta / 1000)
+    this.sway.x -= this.sway.x * k
+    this.sway.y -= this.sway.y * k
+
+    this.retroceso = Math.max(0, this.retroceso - delta / 140)
+
+    // respiracion
+    const bobX = Math.cos(tiempo * 0.0016) * 2
+    const bobY = Math.sin(tiempo * 0.0021) * 3
+
+    const objX = this.base.x + nx * 26 + this.sway.x + bobX
+    const objY = this.base.y + ny * 8 + this.sway.y + bobY + this.retroceso * 24
+    const objRot = nx * 0.09 + this.sway.x * 0.004 - this.retroceso * 0.05
+
+    this.cont.x += (objX - this.cont.x) * 0.35
+    this.cont.y += (objY - this.cont.y) * 0.35
+    this.cont.rotation += (objRot - this.cont.rotation) * 0.3
+    this.cont.setScale(1 - this.retroceso * 0.03)
   }
 
   disparar() {
-    if (!this.destello.active) return
-    this.destello.setVisible(true)
-    this.destelloGrande.setVisible(true)
-    this.escena.time.delayedCall(60, () => {
-      if (this.destello.active) {
-        this.destello.setVisible(false)
-        this.destelloGrande.setVisible(false)
-      }
-    })
-    this.escena.tweens.add({
-      targets: this.cont,
-      y: this.base.y + 12,
-      duration: 45,
-      yoyo: true,
+    this.retroceso = 1
+    this.destello
+      .setVisible(true)
+      .setRotation(Phaser.Math.FloatBetween(0, Math.PI * 2))
+      .setScale(Phaser.Math.FloatBetween(0.35, 0.55))
+    this.escena.time.delayedCall(55, () => {
+      if (this.destello.active) this.destello.setVisible(false)
     })
   }
 }

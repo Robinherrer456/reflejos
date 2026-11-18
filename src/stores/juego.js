@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 
 const CLAVE_RECORDS = 'reflejos-records'
 
@@ -7,6 +7,7 @@ export const useJuegoStore = defineStore('juego', {
     puntaje: 0,
     aciertos: 0,
     tablaRecords: [],
+    sonido: true,
   }),
 
   actions: {
@@ -18,6 +19,10 @@ export const useJuegoStore = defineStore('juego', {
     sumarAcierto(puntos) {
       this.aciertos++
       this.puntaje += puntos
+    },
+
+    alternarSonido() {
+      this.sonido = !this.sonido
     },
 
     cargarRecords() {
