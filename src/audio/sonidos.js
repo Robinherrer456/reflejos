@@ -1,15 +1,26 @@
-﻿import { bus } from '../events/bus.js'
+import { bus } from '../events/bus.js'
 import { SOUND_TOGGLED } from '../events/nombres.js'
+import impactoUrl from '../assets/sonidos/impacto-orbe.mp3'
 
-// Sonidos generados con Web Audio (sin archivos). El silencio llega por evento.
 let ctx = null
 let activo = true
+let audioImpacto = null
 bus.on(SOUND_TOGGLED, (datos) => { activo = datos.activo })
 
 function audio() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)()
   if (ctx.state === 'suspended') ctx.resume()
   return ctx
+}
+
+export function precargar() {
+  if (audioImpacto) return
+  audioImpacto = new Audio(impactoUrl)
+  audioImpacto.preload = 'auto'
+  audioImpacto.addEventListener('error', () => {
+    console.error('No se pudo cargar el sonido de impacto del orbe.')
+  })
+  audioImpacto.load()
 }
 
 function tono({ tipo = 'sine', desde, hasta, dur, vol = 0.2, retraso = 0 }) {
@@ -27,38 +38,19 @@ function tono({ tipo = 'sine', desde, hasta, dur, vol = 0.2, retraso = 0 }) {
   osc.stop(t + dur + 0.02)
 }
 
-function ruido({ dur, vol, filtro }) {
-  const a = audio()
-  const n = Math.floor(a.sampleRate * dur)
-  const buf = a.createBuffer(1, n, a.sampleRate)
-  const d = buf.getChannelData(0)
-  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n)
-  const src = a.createBufferSource()
-  src.buffer = buf
-  const f = a.createBiquadFilter()
-  f.type = 'lowpass'
-  f.frequency.value = filtro
-  const g = a.createGain()
-  g.gain.value = vol
-  src.connect(f).connect(g).connect(a.destination)
-  src.start()
-}
-
 export const sonidos = {
-  disparo() {
-    if (!activo) return
-    ruido({ dur: 0.14, vol: 0.38, filtro: 3200 })
-    tono({ tipo: 'square', desde: 190, hasta: 45, dur: 0.11, vol: 0.16 })
-  },
   acierto() {
     if (!activo) return
-    tono({ desde: 900, hasta: 1400, dur: 0.1, vol: 0.2 })
-    tono({ desde: 1400, hasta: 1900, dur: 0.12, vol: 0.14, retraso: 0.06 })
+    if (!audioImpacto) precargar()
+    audioImpacto.currentTime = 0
+    const reproduccion = audioImpacto.play()
+    if (reproduccion) {
+      reproduccion.catch((error) => {
+        console.warn('No se pudo reproducir el sonido de impacto del orbe.', error)
+      })
+    }
   },
-  fallo() {
-    if (!activo) return
-    tono({ tipo: 'triangle', desde: 240, hasta: 110, dur: 0.14, vol: 0.1 })
-  },
+  fallo() {},
   tic() {
     if (!activo) return
     tono({ tipo: 'square', desde: 700, hasta: 680, dur: 0.07, vol: 0.08 })

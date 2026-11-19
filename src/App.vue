@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import MenuView from './components/MenuView.vue'
 import OnlineView from './components/OnlineView.vue'
 import SalaView from './components/SalaView.vue'
@@ -7,18 +7,28 @@ import GameView from './components/GameView.vue'
 import GameOverView from './components/GameOverView.vue'
 import RankingView from './components/RankingView.vue'
 import RecordsView from './components/RecordsView.vue'
+import AjustesView from './components/AjustesView.vue'
+import EscenariosView from './components/EscenariosView.vue'
 import { bus } from './events/bus.js'
 import { PLAYERS_CHANGED, MATCH_STARTED, SCORE_UPDATE, MATCH_ENDED } from './events/nombres.js'
 import { useOnlineStore } from './stores/online.js'
+import { useAjustesStore } from './stores/ajustes.js'
 
 const online = useOnlineStore()
+const ajustes = useAjustesStore()
+ajustes.cargar()
+
 const pantalla = ref('menu')
 const modoId = ref('rapido')
 const partida = ref(0)
 const sala = ref(null)
 const resultado = ref({ puntaje: 0, aciertos: 0, fallos: 0 })
 
-// Los eventos de red llegan por el bus y se guardan en Pinia
+watch(pantalla, async () => {
+  await nextTick()
+  window.scrollTo(0, 0)
+})
+
 const alJugadores = ({ jugadores }) => online.setJugadores(jugadores)
 const alIniciar = (datos) => online.empezar(datos)
 const alPuntaje = (datos) => online.puntaje(datos)
@@ -38,7 +48,6 @@ onBeforeUnmount(() => {
   bus.off(MATCH_ENDED, alFinal)
 })
 
-// Cuando el anfitrion inicia, todos pasan a la partida con la misma semilla
 watch(
   () => online.partida,
   (p) => {
@@ -87,6 +96,8 @@ async function salir() {
     @jugar="jugar"
     @online="pantalla = 'online'"
     @records="pantalla = 'records'"
+    @ajustes="pantalla = 'ajustes'"
+    @escenarios="pantalla = 'escenarios'"
   />
   <OnlineView
     v-else-if="pantalla === 'online'"
@@ -109,5 +120,7 @@ async function salir() {
     @jugar="jugar(modoId)"
     @records="pantalla = 'records'"
   />
+  <AjustesView v-else-if="pantalla === 'ajustes'" @volver="pantalla = 'menu'" />
+  <EscenariosView v-else-if="pantalla === 'escenarios'" @volver="pantalla = 'menu'" />
   <RecordsView v-else @volver="pantalla = 'menu'" />
 </template>

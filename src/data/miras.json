@@ -1,0 +1,14 @@
+{
+  "estilos": [
+    { "id": "cruz", "nombre": "Cruz" },
+    { "id": "cruz-punto", "nombre": "Cruz con punto" },
+    { "id": "punto", "nombre": "Punto" },
+    { "id": "circulo", "nombre": "Circulo" }
+  ],
+  "colores": [
+    { "id": "blanco", "nombre": "Blanco", "hex": "#FFFFFF" },
+    { "id": "cian", "nombre": "Cian", "hex": "#2EE6F0" },
+    { "id": "verde", "nombre": "Verde", "hex": "#7CFF6B" },
+    { "id": "rosa", "nombre": "Rosa", "hex": "#FF4D6D" }
+  ]
+}

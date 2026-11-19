@@ -1,10 +1,38 @@
-﻿import Phaser from 'phaser'
+import Phaser from 'phaser'
 import modos from '../data/modos.json'
+import escenarios from '../data/escenarios.json'
+import { trazosMira } from '../utils/mira.js'
 import Pistola from './Pistola.js'
-import pistolaUrl from '../assets/pistola.png'
-import { sonidos } from '../audio/sonidos.js'
+import reposoUrl from '../assets/arma/arma-reposo.png'
+import disparoUrl from '../assets/arma/arma-disparo.png'
+import { sonidos, precargar } from '../audio/sonidos.js'
 import { bus } from '../events/bus.js'
 import { TARGET_HIT, TARGET_MISSED, TIME_UP, TIME_CHANGED, SHOT_FIRED } from '../events/nombres.js'
+
+const hexNum = (hex) => Phaser.Display.Color.HexStringToColor(hex).color
+
+// Camara: la sala es una caja de x (-1 a 1), v (-1 piso, 1 techo) y d (distancia 1 a 3.5)
+const FOCAL = 1.25
+const D_CERCA = 1
+const D_FONDO = 3.5
+const D_REPISA = 3.0
+
+const rgb = (hex) => {
+  const n = parseInt(hex.slice(1), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+const mezclar = (h1, h2, t) => {
+  const a = rgb(h1)
+  const b = rgb(h2)
+  const k = Math.min(1, Math.max(0, t))
+  return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * k).toString(16).padStart(2, '0')).join('')
+}
+const mezclarRgb = (cadena, hex2, t) => {
+  const a = cadena.match(/\d+/g).map(Number)
+  const b = rgb(hex2)
+  const k = Math.min(1, Math.max(0, t))
+  return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * k).toString(16).padStart(2, '0')).join('')
+}
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -12,11 +40,18 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('pistola', pistolaUrl)
+    this.load.image('arma-reposo', reposoUrl)
+    this.load.image('arma-disparo', disparoUrl)
   }
 
   init(datos) {
     this.modo = modos.find((m) => m.id === datos.modoId) ?? modos[0]
+    this.escenario = escenarios.find((e) => e.id === datos.escenarioId) ?? escenarios[0]
+    this.cfgMira = {
+      estilo: datos.miraEstilo ?? 'cruz',
+      color: hexNum(datos.miraColor ?? '#FFFFFF'),
+      escala: datos.miraEscala ?? 1,
+    }
     // Con semilla, todos los jugadores online ven las mismas esferas
     this.rng =
       datos.semilla != null
@@ -30,24 +65,23 @@ export default class GameScene extends Phaser.Scene {
     this.aciertos = 0
     this.marcaAcierto = 0
 
+    precargar()
     this.crearTexturas()
     this.dibujarSala()
     this.pistola = new Pistola(this)
     this.add.image(this.scale.width / 2, this.scale.height / 2, 'vineta').setDepth(30)
-    this.mira = this.add.graphics().setDepth(40)
+    this.gMira = this.add.graphics().setDepth(40)
 
     this.input.on('pointerdown', (p, sobre) => {
       if (!this.pistola) return
       this.pistola.disparar()
       this.cameras.main.shake(50, 0.0025)
-      sonidos.disparo()
       bus.emit(SHOT_FIRED)
       if (sobre.length === 0) this.agujero(p.x, p.y)
     })
 
     bus.emit(TIME_CHANGED, { segundos: this.restantes })
 
-    // Cuenta regresiva: un tick por segundo
     this.time.addEvent({
       delay: 1000,
       loop: true,
@@ -59,7 +93,6 @@ export default class GameScene extends Phaser.Scene {
       },
     })
 
-    // Aparicion de objetivos segun el modo (viene del JSON)
     this.time.addEvent({
       delay: this.modo.apareceCadaMs,
       loop: true,
@@ -70,18 +103,26 @@ export default class GameScene extends Phaser.Scene {
   update(tiempo, delta) {
     const puntero = this.input.activePointer
     this.pistola?.actualizar(puntero, tiempo, delta)
-    if (this.mira) this.dibujarMira(puntero, delta)
+    if (this.gMira) this.dibujarMira(puntero, delta)
+  }
+
+  // Proyeccion en perspectiva: (x, v, d) del espacio 3D a pixeles de pantalla
+  proyectar(x, v, d) {
+    const { width: W, height: H } = this.scale
+    const sc = FOCAL / d
+    return { x: W / 2 + x * (W / 2) * sc, y: H * 0.47 - v * (H / 2) * sc, sc }
   }
 
   crearTexturas() {
     const { width: W, height: H } = this.scale
+    const e = this.escenario
 
     const esf = this.textures.createCanvas('esfera', 64, 64)
     let c = esf.getContext()
     let g = c.createRadialGradient(24, 22, 4, 32, 32, 32)
-    g.addColorStop(0, '#d6fcff')
-    g.addColorStop(0.4, '#2ee6f0')
-    g.addColorStop(1, '#0795a8')
+    g.addColorStop(0, e.esfera[0])
+    g.addColorStop(0.4, e.esfera[1])
+    g.addColorStop(1, e.esfera[2])
     c.fillStyle = g
     c.beginPath()
     c.arc(32, 32, 31, 0, Math.PI * 2)
@@ -102,84 +143,163 @@ export default class GameScene extends Phaser.Scene {
     c = vin.getContext()
     g = c.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.9)
     g.addColorStop(0, 'rgba(0,0,0,0)')
-    g.addColorStop(1, 'rgba(0,0,0,0.55)')
+    g.addColorStop(1, 'rgba(0,0,0,' + e.vineta + ')')
     c.fillStyle = g
     c.fillRect(0, 0, W, H)
     vin.refresh()
   }
 
+  // La sala se dibuja desde escenarios.json con perspectiva real y neblina por distancia
   dibujarSala() {
     const { width: W, height: H } = this.scale
-    const bx1 = W * 0.2
-    const bx2 = W * 0.8
-    const by1 = H * 0.18
-    const by2 = H * 0.6
-    this.sala = { bx1, bx2, by1, by2 }
+    const e = this.escenario
+    const tex = this.textures.createCanvas('sala', W, H)
+    const c = tex.getContext()
+    const P = (x, v, d) => this.proyectar(x, v, d)
+    const nebl = (d) => ((d - D_CERCA) / (D_FONDO - D_CERCA)) * e.nieblaFuerza
 
-    const g = this.add.graphics().setDepth(-10)
-    const poly = (color, pts) => {
-      g.fillStyle(color, 1)
-      g.fillPoints(pts.map(([x, y]) => ({ x, y })), true)
+    const quad = (a, b, cc, dd, color, linea) => {
+      c.fillStyle = color
+      c.beginPath()
+      c.moveTo(a.x, a.y)
+      c.lineTo(b.x, b.y)
+      c.lineTo(cc.x, cc.y)
+      c.lineTo(dd.x, dd.y)
+      c.closePath()
+      c.fill()
+      if (linea) {
+        c.strokeStyle = linea
+        c.lineWidth = 1
+        c.stroke()
+      }
     }
 
-    g.fillStyle(0x2a2d33, 1)
-    g.fillRect(0, 0, W, H)
-    poly(0x4c505a, [[0, 0], [W, 0], [bx2, by1], [bx1, by1]])
-    poly(0x30343b, [[0, 0], [bx1, by1], [bx1, by2], [0, H]])
-    poly(0x30343b, [[W, 0], [bx2, by1], [bx2, by2], [W, H]])
-    g.fillStyle(0x3a3e46, 1)
-    g.fillRect(bx1, by1, bx2 - bx1, by2 - by1)
-    g.fillStyle(0x4a4e58, 1)
-    g.fillRect(bx1, by1 + (by2 - by1) * 0.55, bx2 - bx1, (by2 - by1) * 0.45)
-    poly(0xd8d4c8, [[bx1, by2], [bx2, by2], [W, H], [0, H]])
+    c.fillStyle = e.fondo
+    c.fillRect(0, 0, W, H)
 
-    g.lineStyle(1, 0xa8a498, 0.8)
-    for (let i = 0; i <= 8; i++) {
-      g.lineBetween(bx1 + ((bx2 - bx1) * i) / 8, by2, (W * i) / 8, H)
+    const NX = 10
+    const ND = 14
+    const NV = 8
+    const dStep = (j) => D_CERCA + ((D_FONDO - D_CERCA) * j) / ND
+    const color = (base, alt, par, d) => mezclar(par ? base : alt, e.niebla, nebl(d))
+    const alt = (base) => mezclar(base, e.contraste, 0.07)
+
+    // pared del fondo
+    for (let i = 0; i < NX; i++) {
+      for (let k = 0; k < NV; k++) {
+        const x0 = -1 + (2 * i) / NX
+        const x1 = -1 + (2 * (i + 1)) / NX
+        const v0 = -1 + (2 * k) / NV
+        const v1 = -1 + (2 * (k + 1)) / NV
+        quad(P(x0, v1, D_FONDO), P(x1, v1, D_FONDO), P(x1, v0, D_FONDO), P(x0, v0, D_FONDO),
+          color(e.paredFondo, alt(e.paredFondo), (i + k) % 2, D_FONDO))
+      }
     }
-    for (const t of [0.12, 0.28, 0.5, 0.78]) {
-      const y = by2 + (H - by2) * t
-      g.lineBetween(bx1 * (1 - t), y, bx2 + (W - bx2) * t, y)
+
+    // techo, con algunas luces
+    for (let j = 0; j < ND; j++) {
+      for (let i = 0; i < NX; i++) {
+        const d0 = dStep(j)
+        const d1 = dStep(j + 1)
+        const x0 = -1 + (2 * i) / NX
+        const x1 = -1 + (2 * (i + 1)) / NX
+        const luz = i % 3 === 1 && j % 4 === 2
+        const base = luz ? mezclar(e.techo, '#ffffff', 0.25) : e.techo
+        quad(P(x0, 1, d0), P(x1, 1, d0), P(x1, 1, d1), P(x0, 1, d1),
+          color(base, alt(base), (i + j) % 2, d0))
+      }
     }
+
+    // paredes laterales
+    for (const lado of [-1, 1]) {
+      for (let j = 0; j < ND; j++) {
+        for (let k = 0; k < NV; k++) {
+          const d0 = dStep(j)
+          const d1 = dStep(j + 1)
+          const v0 = -1 + (2 * k) / NV
+          const v1 = -1 + (2 * (k + 1)) / NV
+          quad(P(lado, v1, d0), P(lado, v1, d1), P(lado, v0, d1), P(lado, v0, d0),
+            color(e.paredLado, alt(e.paredLado), (j + k) % 2, d0))
+        }
+      }
+    }
+
+    // piso a cuadros (hasta la repisa si el escenario tiene)
+    const dPisoFin = e.repisa ? D_REPISA : D_FONDO
+    for (let j = 0; j < ND; j++) {
+      const d0 = dStep(j)
+      const d1 = dStep(j + 1)
+      if (d0 >= dPisoFin) break
+      for (let i = 0; i < NX; i++) {
+        const x0 = -1 + (2 * i) / NX
+        const x1 = -1 + (2 * (i + 1)) / NX
+        quad(P(x0, -1, d0), P(x1, -1, d0), P(x1, -1, d1), P(x0, -1, d1),
+          color(e.piso1, e.piso2, (i + j) % 2, d0), e.lineasPiso)
+      }
+    }
+
+    // repisa del fondo y bloques
+    if (e.repisa) {
+      const vTope = -0.38
+      const caja = (x0, x1, v0, v1, d0, d1) => {
+        quad(P(x0, v1, d0), P(x1, v1, d0), P(x1, v0, d0), P(x0, v0, d0), mezclar(e.repisa, e.niebla, nebl(d0)))
+        quad(P(x0, v1, d1), P(x1, v1, d1), P(x1, v1, d0), P(x0, v1, d0), mezclar(e.repisaBorde, e.niebla, nebl(d0)))
+      }
+      caja(-1, 1, -1, vTope, D_REPISA, D_FONDO)
+      if (e.bloques) {
+        caja(0.45, 0.72, vTope, -0.12, 3.08, 3.4)
+        caja(0.76, 0.9, vTope, -0.22, 3.12, 3.36)
+      }
+    }
+
+    tex.refresh()
+    this.add.image(W / 2, H / 2, 'sala').setDepth(-10)
   }
 
   dibujarMira(p, delta) {
-    const g = this.mira
+    const g = this.gMira
     this.marcaAcierto = Math.max(0, this.marcaAcierto - delta / 160)
-    const trazos = [[-12, 0, -4, 0], [4, 0, 12, 0], [0, -12, 0, -4], [0, 4, 0, 12]]
     g.clear()
-    g.lineStyle(4, 0x000000, 0.45)
-    trazos.forEach(([a, b, c, d]) => g.lineBetween(p.x + a, p.y + b, p.x + c, p.y + d))
-    g.lineStyle(2, 0xffffff, 1)
-    trazos.forEach(([a, b, c, d]) => g.lineBetween(p.x + a, p.y + b, p.x + c, p.y + d))
-    g.fillStyle(0x2ee6f0, 1)
-    g.fillCircle(p.x, p.y, 1.8)
+    const trazos = trazosMira(this.cfgMira.estilo, this.cfgMira.escala * 1.2)
+    const dibujar = (ancho, color, alfa) => {
+      g.lineStyle(ancho, color, alfa)
+      g.fillStyle(color, alfa)
+      trazos.forEach((t) => {
+        if (t.t === 'l') g.lineBetween(p.x + t.x1, p.y + t.y1, p.x + t.x2, p.y + t.y2)
+        else if (t.relleno) g.fillCircle(p.x, p.y, t.r + (ancho > 2.5 ? 1 : 0))
+        else g.strokeCircle(p.x, p.y, t.r)
+      })
+    }
+    dibujar(4, 0x000000, 0.4)
+    dibujar(2, this.cfgMira.color, 1)
 
-    // marcador de acierto (X blanca que se desvanece)
     if (this.marcaAcierto > 0) {
       g.lineStyle(2.5, 0xffffff, this.marcaAcierto)
       for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-        g.lineBetween(p.x + sx * 8, p.y + sy * 8, p.x + sx * 15, p.y + sy * 15)
+        g.lineBetween(p.x + sx * 8, p.y + sy * 8, p.x + sx * 16, p.y + sy * 16)
       }
     }
   }
 
   crearObjetivo() {
-    const { width: W, height: H } = this.scale
-    const { by1, by2 } = this.sala
+    const W = this.scale.width
     // Solo el rng con semilla decide posiciones: asi todos ven lo mismo
-    const x = this.rng.between(50, W - 50)
-    const y = this.rng.between(by1 + 14, by2 - 8)
-    const t = (y - by1) / (by2 - by1)
-    const r = 11 + t * 8
-    const escala = (r * 2) / 64
+    const x = this.rng.realInRange(-0.85, 0.85)
+    const v = this.rng.realInRange(-0.15, 0.75)
+    const d = this.rng.realInRange(1.6, 2.9)
 
-    const sombra = this.add.ellipse(x, by2 + (H - by2) * 0.35, r * 1.8, r * 0.5, 0x000000, 0.22).setDepth(1)
-    const esfera = this.add.image(x, y, 'esfera').setDepth(2).setScale(0)
+    const p = this.proyectar(x, v, d)
+    const suelo = this.proyectar(x, -1, d)
+    const r = 0.05 * (W / 2) * p.sc
+    const escala = (r * 2) / 64
+    const prof = 2 + (D_FONDO - d)
+
+    const sombra = this.add.ellipse(suelo.x, suelo.y, r * 1.9, r * 0.5, 0x000000, 0.25).setDepth(1)
+    const esfera = this.add.image(p.x, p.y, 'esfera').setDepth(prof).setScale(0)
     esfera.setInteractive(new Phaser.Geom.Circle(32, 32, 32), Phaser.Geom.Circle.Contains)
 
     this.tweens.add({ targets: esfera, scale: escala, duration: 110, ease: 'Back.Out' })
-    const apagar = this.tweens.add({ targets: esfera, alpha: 0.4, duration: this.modo.vidaMs })
+    const apagar = this.tweens.add({ targets: esfera, alpha: 0.45, duration: this.modo.vidaMs })
 
     const quitar = () => {
       apagar.stop()
@@ -195,19 +315,20 @@ export default class GameScene extends Phaser.Scene {
 
     esfera.once('pointerdown', () => {
       vida.remove(false)
-      this.explotar(x, y, r)
+      this.explotar(p.x, p.y, r)
       quitar()
       this.aciertos++
       this.puntaje += this.modo.puntos
       this.marcaAcierto = 1
       sonidos.acierto()
-      this.textoFlotante(x, y - r, '+' + this.modo.puntos)
+      this.textoFlotante(p.x, p.y - r, '+' + this.modo.puntos)
       bus.emit(TARGET_HIT, { puntos: this.modo.puntos })
     })
   }
 
   explotar(x, y, r) {
-    const anillo = this.add.circle(x, y, r, 0x000000, 0).setStrokeStyle(2, 0x7ff3f9, 1).setDepth(4)
+    const color = hexNum(this.escenario.particula)
+    const anillo = this.add.circle(x, y, r, 0x000000, 0).setStrokeStyle(2, color, 1).setDepth(5)
     this.tweens.add({
       targets: anillo,
       scale: 2.6,
@@ -217,27 +338,32 @@ export default class GameScene extends Phaser.Scene {
     })
     for (let i = 0; i < 8; i++) {
       const a = (Math.PI * 2 * i) / 8 + Phaser.Math.FloatBetween(-0.2, 0.2)
-      const dist = Phaser.Math.Between(22, 42)
-      const p = this.add.circle(x, y, Phaser.Math.Between(2, 4), 0x7ff3f9).setDepth(4)
+      const dist = Phaser.Math.Between(22, 48)
+      const part = this.add.circle(x, y, Phaser.Math.Between(2, 4), color).setDepth(5)
       this.tweens.add({
-        targets: p,
+        targets: part,
         x: x + Math.cos(a) * dist,
         y: y + Math.sin(a) * dist,
         alpha: 0,
         duration: 300,
-        onComplete: () => p.destroy(),
+        onComplete: () => part.destroy(),
       })
     }
   }
 
   textoFlotante(x, y, texto) {
     const t = this.add
-      .text(x, y, texto, { fontFamily: 'Arial', fontStyle: 'bold', fontSize: '18px', color: '#7ff3f9' })
+      .text(x, y, texto, {
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        fontSize: '20px',
+        color: this.escenario.particula,
+      })
       .setOrigin(0.5)
       .setDepth(6)
     this.tweens.add({
       targets: t,
-      y: y - 34,
+      y: y - 36,
       alpha: 0,
       duration: 650,
       onComplete: () => t.destroy(),
@@ -265,7 +391,8 @@ export default class GameScene extends Phaser.Scene {
     this.tweens.killAll()
     this.children.removeAll(true)
     this.pistola = null
-    this.mira = null
+    this.gMira = null
     bus.emit(TIME_UP, { puntaje: this.puntaje, aciertos: this.aciertos })
   }
 }
+

@@ -1,13 +1,16 @@
-﻿<script setup>
+<script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import Phaser from 'phaser'
 import GameScene from '../scenes/GameScene.js'
+import Arma3DView from './Arma3DView.vue'
+import modos from '../data/modos.json'
 import { bus } from '../events/bus.js'
 import {
   TARGET_HIT, TARGET_MISSED, TIME_UP, TIME_CHANGED, SHOT_FIRED, SOUND_TOGGLED,
 } from '../events/nombres.js'
 import { useJuegoStore } from '../stores/juego.js'
 import { useOnlineStore } from '../stores/online.js'
+import { useAjustesStore } from '../stores/ajustes.js'
 
 const props = defineProps({
   modoId: { type: String, default: 'rapido' },
@@ -18,19 +21,31 @@ const emit = defineEmits(['terminado'])
 
 const store = useJuegoStore()
 const online = useOnlineStore()
+const ajustes = useAjustesStore()
 const contenedor = ref(null)
 const segundos = ref(0)
 const fallos = ref(0)
 const disparos = ref(0)
 let juego = null
 
+const duracion = computed(() => modos.find((m) => m.id === props.modoId)?.duracionSeg ?? 30)
+const progreso = computed(() =>
+  Math.max(0, Math.min(100, (segundos.value / duracion.value) * 100))
+)
 const precision = computed(() =>
   disparos.value ? Math.round((store.aciertos / disparos.value) * 100) : 0
 )
+const dos = (n) => String(n).padStart(2, '0')
 const tiempoTexto = computed(() => {
   const s = Math.max(0, segundos.value)
-  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
+  return dos(Math.floor(s / 60)) + ':' + dos(s % 60)
 })
+
+const raiz = ref(null)
+function pantallaCompleta() {
+  if (document.fullscreenElement) document.exitFullscreen()
+  else raiz.value?.requestFullscreen?.()
+}
 
 function alternarSonido() {
   store.alternarSonido()
@@ -66,12 +81,20 @@ onMounted(() => {
   juego = new Phaser.Game({
     type: Phaser.AUTO,
     parent: contenedor.value,
-    width: 640,
-    height: 400,
+    width: 1280,
+    height: 720,
     backgroundColor: '#20232A',
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [],
   })
-  juego.scene.add('Game', GameScene, true, { modoId: props.modoId, semilla: props.semilla })
+  juego.scene.add('Game', GameScene, true, {
+    modoId: props.modoId,
+    semilla: props.semilla,
+    escenarioId: ajustes.escenario,
+    miraEstilo: ajustes.miraEstilo,
+    miraColor: ajustes.miraColor,
+    miraEscala: ajustes.miraEscala,
+  })
 })
 
 onBeforeUnmount(() => {
@@ -85,7 +108,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="partida">
+  <div ref="raiz" class="partida">
     <div v-if="sala" class="rivales">
       <span v-for="r in online.ranking" :key="r.id" :class="{ yo: r.id === online.jugador?.id }">
         {{ r.nombre }} <strong>{{ r.puntaje }}</strong>
@@ -93,28 +116,27 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="lienzo">
-      <div ref="contenedor"></div>
+      <div ref="contenedor" class="juego"></div>
+      <Arma3DView />
 
-      <div class="hud-aim">
-        <div class="panel panel-izq">
-          <small>PTS</small>
-          <strong>{{ store.puntaje }}</strong>
-        </div>
-        <div class="reloj">
-          <span class="flecha">&lsaquo;</span>
-          <strong>{{ tiempoTexto }}</strong>
-          <span class="flecha">&rsaquo;</span>
-        </div>
-        <div class="panel panel-der">
-          <small>ACIERTOS</small>
-          <strong>{{ store.aciertos }}</strong>
-          <small class="pct">{{ precision }}%</small>
+      <div class="hud2">
+        <div class="barra"><i :style="{ width: progreso + '%' }"></i></div>
+        <div class="datos">
+          <div class="caja"><small>Puntos</small><strong>{{ store.puntaje }}</strong></div>
+          <div class="caja"><small>Tiempo</small><strong>{{ tiempoTexto }}</strong></div>
+          <div class="caja">
+            <small>Precisi&oacute;n</small>
+            <strong>{{ precision }}%</strong>
+          </div>
         </div>
       </div>
 
       <button class="sonido" :class="{ apagado: !store.sonido }" @click="alternarSonido">
         Sonido
       </button>
+      <button class="sonido completa" @click="pantallaCompleta">Pantalla completa</button>
     </div>
   </div>
 </template>
+
+
