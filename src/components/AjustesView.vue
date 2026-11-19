@@ -18,6 +18,7 @@ watch(
     aj.miraEstilo,
     aj.miraColor,
     aj.miraEscala,
+    aj.arma,
     aj.sensibilidad,
     aj.campoVision,
     aj.mostrarArma,
@@ -67,6 +68,18 @@ function alternarSonido() {
       </div>
       <label class="tamano">Tama&ntilde;o
         <input type="range" min="0.7" max="2" step="0.1" v-model.number="aj.miraEscala" />
+      </label>
+    </section>
+
+    <section class="ajuste">
+      <h3>Arma</h3>
+      <label class="opcion-ajuste">
+        <input v-model="aj.arma" type="radio" name="arma" value="arma1" />
+        Arma 1 · Pistola y guantes
+      </label>
+      <label class="opcion-ajuste">
+        <input v-model="aj.arma" type="radio" name="arma" value="arma2" />
+        Arma 2 · Solo pistola
       </label>
     </section>
 

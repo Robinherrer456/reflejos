@@ -30,8 +30,19 @@ const capsula = (radio, largo, material, x, y, z) => {
   return m
 }
 
+function segmentoEntre(inicio, fin, radio, material) {
+  const direccion = new THREE.Vector3().subVectors(fin, inicio)
+  const m = new THREE.Mesh(
+    new THREE.CapsuleGeometry(radio, Math.max(0.001, direccion.length() - radio * 2), 4, 10),
+    material
+  )
+  m.position.copy(inicio).add(fin).multiplyScalar(0.5)
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direccion.normalize())
+  return m
+}
+
 // Arma hecha de piezas. En su espacio: -z es adelante, +z es hacia la camara.
-function construirArma() {
+function construirArma(incluirGuante = true) {
   const g = new THREE.Group()
   const metal = mat(0xb4b9c6, 0.4, 0.45)
   const rojo = mat(0xc0132f, 0.45, 0.25)
@@ -75,24 +86,24 @@ function construirArma() {
   gatillo.add(caja(0.007, 0.022, 0.007, negro, 0, -0.011, 0))
   g.add(gatillo)
 
-  // mano con guante
-  g.add(caja(0.052, 0.082, 0.05, guante, 0.012, -0.03, 0.115))
-  g.add(caja(0.046, 0.012, 0.05, placa, 0.012, 0.015, 0.118))
-  const alturas = [-0.034, -0.056, -0.078]
-  alturas.forEach((y, i) => {
-    const dedo = capsula(0.0095, 0.034, guante, -0.012, y, 0.048 - i * 0.006)
-    dedo.rotation.z = Math.PI / 2
-    g.add(dedo)
-  })
-  const pulgar = capsula(0.0105, 0.05, guante, -0.026, 0.02, 0.07)
-  pulgar.rotation.x = Math.PI / 2
-  g.add(pulgar)
+  if (incluirGuante) {
+    g.add(caja(0.052, 0.082, 0.05, guante, 0.012, -0.03, 0.115))
+    g.add(caja(0.046, 0.012, 0.05, placa, 0.012, 0.015, 0.118))
+    const alturas = [-0.034, -0.056, -0.078]
+    alturas.forEach((y, i) => {
+      const dedo = capsula(0.0095, 0.034, guante, -0.012, y, 0.048 - i * 0.006)
+      dedo.rotation.z = Math.PI / 2
+      g.add(dedo)
+    })
+    const pulgar = capsula(0.0105, 0.05, guante, -0.026, 0.02, 0.07)
+    pulgar.rotation.x = Math.PI / 2
+    g.add(pulgar)
 
-  // antebrazo hacia la esquina inferior derecha
-  const direccion = new THREE.Vector3(0.11, -0.18, 0.26).normalize()
-  const antebrazo = capsula(0.034, 0.26, guante, 0.066, -0.118, 0.242)
-  antebrazo.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direccion)
-  g.add(antebrazo)
+    const direccion = new THREE.Vector3(0.11, -0.18, 0.26).normalize()
+    const antebrazo = capsula(0.034, 0.26, guante, 0.066, -0.118, 0.242)
+    antebrazo.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direccion)
+    g.add(antebrazo)
+  }
 
   return {
     grupo: g,
@@ -106,46 +117,77 @@ function construirArma() {
 
 function construirGuante() {
   const g = new THREE.Group()
-  const guante = mat(0x2d3142, 0.85, 0.05)
-  const placa = mat(0x4a5068, 0.65, 0.1)
+  const guante = mat(0x202630, 0.88, 0.03)
+  const refuerzo = mat(0x39414d, 0.78, 0.05)
+  const acento = mat(0xc3a936, 0.72, 0.02)
+  const vector = (x, y, z) => new THREE.Vector3(x, y, z)
 
-  g.add(caja(0.052, 0.082, 0.05, guante, 0.012, -0.03, 0.115))
-  g.add(caja(0.046, 0.012, 0.05, placa, 0.012, 0.015, 0.118))
-  const alturas = [-0.034, -0.056, -0.078]
-  alturas.forEach((y, i) => {
-    const dedo = capsula(0.0095, 0.034, guante, -0.012, y, 0.048 - i * 0.006)
-    dedo.rotation.z = Math.PI / 2
-    g.add(dedo)
+  const palma = capsula(0.022, 0.042, guante, 0, -0.026, -0.004)
+  palma.scale.z = 0.68
+  g.add(palma)
+
+  const dedos = [-0.015, -0.005, 0.005, 0.015]
+  dedos.forEach((x, i) => {
+    const nudillo = vector(x, 0.012, 0.019)
+    const curva = vector(x, -0.018, 0.033)
+    const punta = vector(x, -0.047, 0.012)
+    g.add(segmentoEntre(nudillo, curva, 0.0075, guante))
+    g.add(segmentoEntre(curva, punta, 0.0065, guante))
+    g.add(capsula(0.006, 0.008, refuerzo, x, 0.008, 0.03))
+    if (i < 3) g.add(caja(0.006, 0.009, 0.002, acento, x, 0.008, 0.036))
   })
 
-  const pulgar = capsula(0.0105, 0.05, guante, -0.026, 0.02, 0.07)
-  pulgar.rotation.x = Math.PI / 2
-  g.add(pulgar)
+  g.add(segmentoEntre(vector(-0.026, 0.008, 0.002), vector(-0.038, -0.014, 0.026), 0.009, guante))
+  g.add(segmentoEntre(vector(-0.038, -0.014, 0.026), vector(-0.012, -0.031, 0.036), 0.008, guante))
 
-  const direccion = new THREE.Vector3(0.11, -0.18, 0.26).normalize()
-  const antebrazo = capsula(0.034, 0.26, guante, 0.066, -0.118, 0.242)
-  antebrazo.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direccion)
+  const antebrazo = segmentoEntre(
+    vector(0.006, -0.052, -0.012),
+    vector(0.055, -0.14, 0.055),
+    0.026,
+    guante
+  )
   g.add(antebrazo)
+  g.add(caja(0.045, 0.009, 0.008, refuerzo, 0.027, -0.091, 0.036))
+  g.position.set(-0.01, 0, 0.08)
   return g
 }
 
-async function cargarModelo(url) {
+async function cargarModelo(url, usarRigFps = false) {
   const gltf = await new GLTFLoader().loadAsync(url)
   const modelo = gltf.scene
-  modelo.rotation.set(ORIENTACION_MODELO.x, ORIENTACION_MODELO.y, ORIENTACION_MODELO.z)
+  if (usarRigFps) {
+    modelo.rotation.y = Math.PI / 2
+  } else {
+    modelo.rotation.set(ORIENTACION_MODELO.x, ORIENTACION_MODELO.y, ORIENTACION_MODELO.z)
+  }
+  const animador = new THREE.AnimationMixer(modelo)
+  const clipReposo = gltf.animations.find((clip) => /idle|grip/i.test(clip.name))
+  const accionReposo = clipReposo ? animador.clipAction(clipReposo) : null
+  if (accionReposo) accionReposo.play()
+  animador.update(0)
+  modelo.updateMatrixWorld(true)
   const caja3 = new THREE.Box3().setFromObject(modelo)
   const tam = caja3.getSize(new THREE.Vector3())
-  modelo.scale.setScalar(TAMANO_MODELO / Math.max(tam.x, tam.y, tam.z))
+  const tamanoObjetivo = usarRigFps ? 0.6 : TAMANO_MODELO
+  modelo.scale.setScalar(tamanoObjetivo / Math.max(tam.x, tam.y, tam.z))
   caja3.setFromObject(modelo)
   modelo.position.sub(caja3.getCenter(new THREE.Vector3()))
   const envoltura = new THREE.Group()
+  if (usarRigFps) envoltura.position.set(-0.09, -0.035, 0)
   envoltura.add(modelo)
-  const animador = new THREE.AnimationMixer(modelo)
   const clipDisparo = gltf.animations.find((clip) =>
     /shoot|dispar|shot|fire/i.test(clip.name)
   )
   const accionDisparo = clipDisparo ? animador.clipAction(clipDisparo) : null
-  if (accionDisparo) accionDisparo.setLoop(THREE.LoopOnce, 1).clampWhenFinished = true
+  if (accionDisparo) {
+    accionDisparo.setLoop(THREE.LoopOnce, 1)
+    accionDisparo.clampWhenFinished = true
+    animador.addEventListener('finished', (event) => {
+      if (event.action !== accionDisparo) return
+      accionDisparo.stop()
+      accionReposo?.reset().play()
+    })
+  }
   return {
     grupo: envoltura,
     corredera: null,
@@ -154,7 +196,9 @@ async function cargarModelo(url) {
     destello: new THREE.Vector3(0, 0.02, -0.14),
     casquillo: new THREE.Vector3(0.02, 0.03, 0.02),
     animador,
+    accionReposo,
     accionDisparo,
+    incluyeManos: usarRigFps,
   }
 }
 
@@ -184,7 +228,8 @@ function crearDestello() {
   return { grupo, plano, luz }
 }
 
-export function crearArma3D(contenedor) {
+export function crearArma3D(contenedor, tipoArma = 'arma1') {
+  const usarRigFps = tipoArma !== 'arma2'
   const render = new THREE.WebGLRenderer({ alpha: true, antialias: true })
   render.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   render.setClearColor(0x000000, 0)
@@ -211,7 +256,7 @@ export function crearArma3D(contenedor) {
   pivote.rotation.set(BASE.rx, BASE.ry, 0)
   escena.add(pivote)
 
-  let actual = construirArma()
+  let actual = construirArma(usarRigFps)
   pivote.add(actual.grupo)
 
   const destello = crearDestello()
@@ -253,8 +298,8 @@ export function crearArma3D(contenedor) {
     retroceso = Math.min(1, retroceso + 0.9)
     correderaR = 1
     if (actual.accionDisparo) {
-      actual.accionDisparo.stop()
-      actual.accionDisparo.play()
+      actual.accionReposo?.stop()
+      actual.accionDisparo.reset().play()
     }
     tDestello = 0.075
     destello.plano.rotation.z = Math.random() * Math.PI * 2
@@ -270,20 +315,29 @@ export function crearArma3D(contenedor) {
 
   // Si hay un modelo .glb en src/assets/arma/, reemplaza al arma de piezas
   let vivo = true
-  const url = Object.values(modelos)[0]
+  const urlRigFps = modelos['../assets/arma/fps-rig.glb']
+  const urlGlock = modelos['../assets/arma/glock-19.glb']
+  const url = usarRigFps ? urlRigFps || urlGlock : urlGlock
   let guante = null
   if (url) {
-    cargarModelo(url)
+    cargarModelo(url, usarRigFps && Boolean(urlRigFps))
       .then((m) => {
         if (!vivo) return
         pivote.remove(actual.grupo)
         actual = m
         pivote.add(actual.grupo)
-        guante = construirGuante()
-        pivote.add(guante)
+        if (m.incluyeManos || !usarRigFps) {
+          if (guante) pivote.remove(guante)
+          guante = null
+        } else {
+          guante = construirGuante()
+          pivote.add(guante)
+        }
         destello.grupo.position.copy(actual.destello)
       })
-      .catch(() => {})
+      .catch((error) => {
+        console.error('No se pudo cargar el modelo de la pistola.', error)
+      })
   }
 
   let ultimo = performance.now()

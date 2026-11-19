@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
 
     <div class="lienzo">
       <div ref="contenedor" class="juego"></div>
-      <Arma3DView v-if="ajustes.mostrarArma" />
+      <Arma3DView v-if="ajustes.mostrarArma" :tipo-arma="ajustes.arma" />
 
       <div class="hud2">
         <div class="barra">
