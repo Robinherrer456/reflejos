@@ -40,16 +40,24 @@ watch(
       >
         <span
           class="scenario-preview"
+          :class="`preview-${escenario.id}`"
           :style="{
             '--preview-ceiling': escenario.techo,
             '--preview-wall': escenario.paredFondo,
             '--preview-floor': escenario.piso1,
+            '--preview-sky-top': escenario.cieloArriba,
+            '--preview-sky-bottom': escenario.cieloAbajo,
+            '--preview-lines': escenario.lineasPiso,
           }"
           aria-hidden="true"
         >
+          <span class="preview-stars"></span>
+          <span class="preview-sun"></span>
+          <span class="preview-panels"></span>
           <span class="preview-orb"></span>
           <span class="preview-horizon"></span>
           <span class="preview-floor-grid"></span>
+          <span class="preview-platform"></span>
         </span>
         <span class="scenario-card-info">
           <span>

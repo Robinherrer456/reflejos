@@ -1,7 +1,15 @@
 import { defineStore } from 'pinia'
 
 const CLAVE = 'reflejos-ajustes'
-const base = { miraEstilo: 'cruz', miraColor: '#FFFFFF', miraEscala: 1, escenario: 'oscura' }
+const base = {
+  miraEstilo: 'cruz',
+  miraColor: '#FFFFFF',
+  miraEscala: 1,
+  escenario: 'oscura',
+  sensibilidad: 1,
+  campoVision: 90,
+  mostrarArma: true,
+}
 
 // Ajustes que la interfaz de Vue muestra y el jugador cambia
 export const useAjustesStore = defineStore('ajustes', {
@@ -23,6 +31,9 @@ export const useAjustesStore = defineStore('ajustes', {
           miraColor: this.miraColor,
           miraEscala: this.miraEscala,
           escenario: this.escenario,
+          sensibilidad: this.sensibilidad,
+          campoVision: this.campoVision,
+          mostrarArma: this.mostrarArma,
         })
       )
     },

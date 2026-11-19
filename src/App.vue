@@ -10,6 +10,7 @@ import RecordsView from './components/RecordsView.vue'
 import AjustesView from './components/AjustesView.vue'
 import EscenariosView from './components/EscenariosView.vue'
 import { bus } from './events/bus.js'
+import { desbloquearSonido } from './audio/sonidos.js'
 import { PLAYERS_CHANGED, MATCH_STARTED, SCORE_UPDATE, MATCH_ENDED } from './events/nombres.js'
 import { useOnlineStore } from './stores/online.js'
 import { useAjustesStore } from './stores/ajustes.js'
@@ -60,6 +61,7 @@ watch(
 )
 
 function jugar(id) {
+  desbloquearSonido()
   sala.value = null
   modoId.value = id
   partida.value++

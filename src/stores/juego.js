@@ -8,6 +8,7 @@ export const useJuegoStore = defineStore('juego', {
     aciertos: 0,
     tablaRecords: [],
     sonido: true,
+    ultimoRecordId: null,
   }),
 
   actions: {
@@ -31,16 +32,24 @@ export const useJuegoStore = defineStore('juego', {
     },
 
     // Devuelve el puesto (1 a 10) si entro en la tabla, o null si no entro
-    guardarRecord(nombre, puntaje) {
-      this.tablaRecords.push({ nombre, puntaje })
+    guardarRecord(nombre, puntaje, estadisticas = {}) {
+      const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+      this.ultimoRecordId = id
+      this.tablaRecords.push({ id, nombre, puntaje, ...estadisticas })
       this.tablaRecords.sort((a, b) => b.puntaje - a.puntaje)
       this.tablaRecords = this.tablaRecords.slice(0, 10)
       localStorage.setItem(CLAVE_RECORDS, JSON.stringify(this.tablaRecords))
 
-      const puesto = this.tablaRecords.findIndex(
-        (r) => r.nombre === nombre && r.puntaje === puntaje
-      )
+      const puesto = this.tablaRecords.findIndex((r) => r.id === id)
       return puesto === -1 ? null : puesto + 1
+    },
+
+    renombrarRecord(id, nombre) {
+      const record = this.tablaRecords.find((r) => r.id === id)
+      if (!record) return false
+      record.nombre = nombre
+      localStorage.setItem(CLAVE_RECORDS, JSON.stringify(this.tablaRecords))
+      return true
     },
   },
 })

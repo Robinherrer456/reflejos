@@ -250,13 +250,13 @@ export function crearArma3D(contenedor) {
   const sway = { x: 0, y: 0 }
 
   const alDisparar = () => {
-    retroceso = 1
+    retroceso = Math.min(1, retroceso + 0.9)
     correderaR = 1
     if (actual.accionDisparo) {
       actual.accionDisparo.stop()
       actual.accionDisparo.play()
     }
-    tDestello = 0.06
+    tDestello = 0.075
     destello.plano.rotation.z = Math.random() * Math.PI * 2
     destello.plano.scale.setScalar(0.7 + Math.random() * 0.6)
     pivote.updateMatrixWorld(true)
@@ -308,12 +308,14 @@ export function crearArma3D(contenedor) {
     retroceso = Math.max(0, retroceso - dt / 0.16)
     correderaR = Math.max(0, correderaR - dt / 0.09)
 
+    const golpe = retroceso * retroceso * (3 - 2 * retroceso)
+    const gatilloR = correderaR * correderaR * (3 - 2 * correderaR)
     const t = ahora / 1000
     const objX = BASE.x + raton.x * 0.035 + sway.x * 0.25 + Math.cos(t * 1.6) * 0.0015
     const objY = BASE.y - raton.y * 0.018 + sway.y * 0.2 + Math.sin(t * 2.1) * 0.002
-    const objZ = BASE.z + retroceso * 0.05
+    const objZ = BASE.z + golpe * 0.05
     const objRY = BASE.ry - raton.x * 0.2 - sway.x * 0.6
-    const objRX = BASE.rx - raton.y * 0.12 + retroceso * 0.14 - sway.y * 0.5
+    const objRX = BASE.rx - raton.y * 0.12 + golpe * 0.14 - sway.y * 0.5
 
     const s = 1 - Math.pow(1e-6, dt)
     pivote.position.x += (objX - pivote.position.x) * s
@@ -322,8 +324,8 @@ export function crearArma3D(contenedor) {
     pivote.rotation.y += (objRY - pivote.rotation.y) * s
     pivote.rotation.x += (objRX - pivote.rotation.x) * s
 
-    if (actual.corredera) actual.corredera.position.z = actual.correderaZ + correderaR * 0.05
-    if (actual.gatillo) actual.gatillo.rotation.x = -0.5 * correderaR
+    if (actual.corredera) actual.corredera.position.z = actual.correderaZ + gatilloR * 0.05
+    if (actual.gatillo) actual.gatillo.rotation.x = -0.5 * gatilloR
 
     tDestello -= dt
     const encendido = tDestello > 0

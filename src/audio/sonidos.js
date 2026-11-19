@@ -9,8 +9,16 @@ bus.on(SOUND_TOGGLED, (datos) => { activo = datos.activo })
 
 function audio() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)()
-  if (ctx.state === 'suspended') ctx.resume()
   return ctx
+}
+
+export function desbloquearSonido() {
+  const a = audio()
+  if (a.state === 'suspended') {
+    a.resume().catch((error) => {
+      console.warn('No se pudo activar el audio del juego.', error)
+    })
+  }
 }
 
 export function precargar() {
@@ -25,20 +33,33 @@ export function precargar() {
 
 function tono({ tipo = 'sine', desde, hasta, dur, vol = 0.2, retraso = 0 }) {
   const a = audio()
-  const t = a.currentTime + retraso
-  const osc = a.createOscillator()
-  const g = a.createGain()
-  osc.type = tipo
-  osc.frequency.setValueAtTime(desde, t)
-  osc.frequency.exponentialRampToValueAtTime(Math.max(hasta, 1), t + dur)
-  g.gain.setValueAtTime(vol, t)
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
-  osc.connect(g).connect(a.destination)
-  osc.start(t)
-  osc.stop(t + dur + 0.02)
+  const reproducir = () => {
+    const t = a.currentTime + retraso
+    const osc = a.createOscillator()
+    const g = a.createGain()
+    osc.type = tipo
+    osc.frequency.setValueAtTime(desde, t)
+    osc.frequency.exponentialRampToValueAtTime(Math.max(hasta, 1), t + dur)
+    g.gain.setValueAtTime(vol, t)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    osc.connect(g).connect(a.destination)
+    osc.start(t)
+    osc.stop(t + dur + 0.02)
+  }
+  if (a.state === 'suspended') {
+    a.resume().then(reproducir).catch((error) => {
+      console.warn('No se pudo reproducir el efecto de sonido.', error)
+    })
+  } else {
+    reproducir()
+  }
 }
 
 export const sonidos = {
+  disparo() {
+    if (!activo) return
+    tono({ tipo: 'triangle', desde: 180, hasta: 55, dur: 0.09, vol: 0.2 })
+  },
   acierto() {
     if (!activo) return
     if (!audioImpacto) precargar()
@@ -50,7 +71,10 @@ export const sonidos = {
       })
     }
   },
-  fallo() {},
+  fallo() {
+    if (!activo) return
+    tono({ tipo: 'sawtooth', desde: 260, hasta: 120, dur: 0.11, vol: 0.09 })
+  },
   tic() {
     if (!activo) return
     tono({ tipo: 'square', desde: 700, hasta: 680, dur: 0.07, vol: 0.08 })

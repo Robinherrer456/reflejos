@@ -42,7 +42,13 @@ onMounted(() => store.cargarRecords())
           </svg>
           <span v-else>{{ medallas[i] || String(i + 1).padStart(2, '0') }}</span>
         </span>
-        <span class="record-player">{{ record.nombre }}</span>
+        <span class="record-player">
+          {{ record.nombre }}
+          <small v-if="record.precision != null">
+            {{ record.precision }}% precisi&oacute;n &middot;
+            {{ record.reaccionPromedio }} ms &middot; racha {{ record.mejorRacha }}
+          </small>
+        </span>
         <strong class="record-score">{{ record.puntaje }}</strong>
         <span class="record-points">pts</span>
       </li>

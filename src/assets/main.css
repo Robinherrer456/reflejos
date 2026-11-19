@@ -186,6 +186,8 @@ div.partida { position: relative; width: min(100%, 960px); }
 .pantalla .fila button.color.activo { border-color: #fff; }
 .tamano { display: flex; gap: 12px; align-items: center; color: #b9c0cc; }
 .tamano input { flex: 1; }
+.opcion-ajuste { display: flex; align-items: center; gap: 10px; color: #b9c0cc; }
+.opcion-ajuste input { accent-color: #2EE6F0; }
 .escenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .pantalla .escenarios button.esc { padding: 0; overflow: hidden; border-radius: 12px; border: 2px solid #343a4d; clip-path: none; background: #14161b; text-align: left; }
 .pantalla .escenarios button.esc.activo { border-color: #2EE6F0; background: #14161b; color: #fff; font-weight: 400; }
@@ -310,6 +312,7 @@ div.partida .rivales { position: absolute; bottom: 10px; left: 50%; transform: t
 .record-rank { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid rgba(133, 159, 196, 0.24); border-radius: 50%; color: #9eb0ca; font-size: 12px; font-weight: 800; }
 .record-rank svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .record-player { overflow: hidden; color: #e5eefc; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.record-player small { display: block; margin-top: 2px; color: #8296b4; font-size: 10px; font-weight: 400; }
 .record-score { color: #fff; font-size: 19px; font-variant-numeric: tabular-nums; }
 .record-points { color: #8296b4; font-size: 11px; }
 .puesto-1 { border-color: rgba(255, 209, 102, 0.4); background: linear-gradient(90deg, rgba(154, 111, 29, 0.26), rgba(28, 43, 69, 0.62)); }
@@ -340,9 +343,26 @@ div.partida .rivales { position: absolute; bottom: 10px; left: 50%; transform: t
 .scenario-card.activo { border-color: #57d9ff; box-shadow: 0 0 0 1px rgba(87, 217, 255, 0.45), 0 12px 32px rgba(32, 145, 216, 0.14); }
 .scenario-preview { position: relative; display: block; height: clamp(115px, 19vw, 185px); overflow: hidden; background: linear-gradient(180deg, var(--preview-ceiling) 0 28%, var(--preview-wall) 28% 68%, var(--preview-floor) 68%); }
 .scenario-preview::before { position: absolute; inset: 0; content: ''; background: repeating-linear-gradient(90deg, transparent 0 12.2%, rgba(220,240,255,0.07) 12.4% 12.7%), linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.12)); }
+.preview-stars, .preview-sun, .preview-panels, .preview-platform { display: none; }
+.preview-clara { background: linear-gradient(180deg, #f8fcff 0 20%, var(--preview-wall) 20% 67%, var(--preview-floor) 67%); }
+.preview-clara .preview-panels { position: absolute; top: 5%; left: 18%; display: block; width: 64%; height: 13%; background: repeating-linear-gradient(90deg, #fff 0 18%, #d7ecf7 19% 20%); box-shadow: 0 0 18px #fff; }
+.preview-neon { background: linear-gradient(180deg, var(--preview-sky-top), var(--preview-sky-bottom) 64%, var(--preview-floor) 65%); }
+.preview-neon::before { background: repeating-linear-gradient(90deg, transparent 0 24%, rgba(66,200,255,.55) 24.5% 25%), linear-gradient(180deg, transparent 58%, rgba(30,180,255,.2)); }
+.preview-neon .preview-stars { position: absolute; inset: 0 0 36%; display: block; background-image: radial-gradient(#fff 1px, transparent 1.5px), radial-gradient(#9ceaff 1px, transparent 1.5px); background-position: 10px 12px, 42px 28px; background-size: 57px 39px, 83px 61px; opacity: .7; }
+.preview-atardecer { background: linear-gradient(180deg, #503461, #d66b75 40%, #ffad72 63%, #60404b 64%); }
+.preview-atardecer::before { background: linear-gradient(180deg, transparent 58%, rgba(255,190,126,.25)); }
+.preview-atardecer .preview-sun { position: absolute; top: 39%; left: 50%; display: block; width: 34px; height: 34px; transform: translate(-50%,-50%); border-radius: 50%; background: #ffe0a2; box-shadow: 0 0 26px 8px rgba(255,177,113,.55); }
+.preview-atardecer .preview-horizon { right: 0; bottom: 34%; left: 0; height: 2px; background: rgba(255,222,174,.75); }
+.preview-atardecer .preview-platform { position: absolute; right: 8%; bottom: 0; left: 8%; display: block; height: 20%; transform: perspective(100px) rotateX(10deg); border-top: 2px solid rgba(255,201,158,.75); background: linear-gradient(180deg, rgba(255,186,142,.15), rgba(38,25,43,.5)); }
 .preview-orb { position: absolute; z-index: 1; top: 43%; left: 48%; width: 17px; height: 17px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #55dfff 45%, #3075dc); box-shadow: 0 0 18px rgba(71, 201, 255, 0.65); }
 .preview-horizon { position: absolute; z-index: 1; right: 12%; bottom: 32%; left: 12%; height: 3px; background: rgba(210, 230, 255, 0.28); }
-.preview-floor-grid { position: absolute; right: 0; bottom: 0; left: 0; height: 32%; background: repeating-linear-gradient(0deg, transparent 0 14px, rgba(220,240,255,0.17) 15px 16px); }
+.preview-floor-grid { position: absolute; right: 0; bottom: 0; left: 0; height: 32%; background: repeating-linear-gradient(0deg, transparent 0 14px, var(--preview-lines, rgba(220,240,255,0.17)) 15px 16px); }
+.preview-neon .preview-floor-grid { height: 37%; background: repeating-linear-gradient(0deg, transparent 0 18px, rgba(66,200,255,.7) 19px 21px), repeating-linear-gradient(90deg, transparent 0 28px, rgba(66,200,255,.55) 29px 31px); box-shadow: 0 -7px 22px rgba(54,200,255,.3); }
+.preview-atardecer .preview-floor-grid { height: 30%; background: repeating-linear-gradient(0deg, transparent 0 24px, rgba(255,215,180,.2) 25px 26px), repeating-linear-gradient(90deg, transparent 0 42px, rgba(255,215,180,.15) 43px 44px); }
+.preview-neon .preview-orb { background: radial-gradient(circle at 35% 30%, #fff, #d692ff 45%, #6f38ff); box-shadow: 0 0 22px #b34dff; }
+.preview-atardecer .preview-orb { top: 52%; background: radial-gradient(circle at 35% 30%, #fff7cf, #ffae42 50%, #df4f37); box-shadow: 0 0 18px rgba(255,165,83,.8); }
+.preview-oscura .preview-floor-grid { height: 32%; background: repeating-linear-gradient(0deg, transparent 0 19px, rgba(0,0,0,.24) 20px 21px); }
+.preview-oscura .preview-panels { position: absolute; top: 3%; left: 36%; display: block; width: 28%; height: 5px; background: #ffe4ad; box-shadow: 0 7px 22px 9px rgba(255,218,156,.22); }
 .scenario-card-info { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; }
 .scenario-card-info strong, .scenario-card-info small { display: block; }
 .scenario-card-info strong { color: #f2f7ff; font-size: 16px; }
@@ -403,3 +423,16 @@ body {
 .pantalla input { border-color: rgba(70, 193, 244, 0.55); background: #101c32; }
 .pantalla input:focus { outline: 2px solid rgba(85, 221, 255, 0.5); outline-offset: 2px; }
 .pantalla.ancha { width: min(100%, 680px); }
+
+/* La escena se adapta al viewport completo; la proyeccion ajusta su escala al aspecto. */
+div.partida { display: block; }
+div.partida .lienzo { position: absolute; inset: 0; width: 100%; height: 100vh; height: 100dvh; aspect-ratio: auto; }
+div.partida .lienzo .juego { position: absolute; inset: 0; width: 100%; height: 100%; }
+div.partida .lienzo canvas { display: block; width: 100% !important; height: 100% !important; }
+.hud2 .barra small { display: block; margin: -5px 0 7px; color: #e8edf5; font-size: 10px; white-space: nowrap; }
+.cuenta-atras { position: absolute; z-index: 4; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: clamp(84px, 18vw, 180px); font-weight: 900; line-height: 1; text-shadow: 0 4px 28px rgba(0,0,0,.7), 0 0 35px rgba(46,230,240,.35); pointer-events: none; animation: cuenta-pop .3s ease-out; }
+@keyframes cuenta-pop { from { opacity: 0; transform: translate(-50%, -50%) scale(1.35); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.resumen-final { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 20px 0; }
+.resumen-final > div { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid rgba(103,158,232,.16); border-radius: 10px; background: rgba(15,26,47,.75); }
+.resumen-final small { color: #9eb0ca; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.resumen-final strong { color: #f3f7ff; font-size: 22px; }

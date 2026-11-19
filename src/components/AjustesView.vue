@@ -14,7 +14,14 @@ const juego = useJuegoStore()
 const trazos = computed(() => trazosMira(aj.miraEstilo, aj.miraEscala * 1.8))
 
 watch(
-  () => [aj.miraEstilo, aj.miraColor, aj.miraEscala],
+  () => [
+    aj.miraEstilo,
+    aj.miraColor,
+    aj.miraEscala,
+    aj.sensibilidad,
+    aj.campoVision,
+    aj.mostrarArma,
+  ],
   () => aj.guardar()
 )
 
@@ -60,6 +67,22 @@ function alternarSonido() {
       </div>
       <label class="tamano">Tama&ntilde;o
         <input type="range" min="0.7" max="2" step="0.1" v-model.number="aj.miraEscala" />
+      </label>
+    </section>
+
+    <section class="ajuste">
+      <h3>Juego</h3>
+      <label class="tamano">
+        Sensibilidad del rat&oacute;n <strong>{{ aj.sensibilidad.toFixed(1) }}&times;</strong>
+        <input v-model.number="aj.sensibilidad" type="range" min="0.5" max="2" step="0.1" />
+      </label>
+      <label class="tamano">
+        Campo de visi&oacute;n <strong>{{ aj.campoVision }}&deg;</strong>
+        <input v-model.number="aj.campoVision" type="range" min="70" max="110" step="5" />
+      </label>
+      <label class="opcion-ajuste">
+        <input v-model="aj.mostrarArma" type="checkbox" />
+        Mostrar arma
       </label>
     </section>
 
